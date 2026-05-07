@@ -18,7 +18,8 @@ body{min-height:100vh;display:flex;flex-direction:column;align-items:center;just
 .result.vis{display:block}
 .result-emoji{font-size:3rem;margin-bottom:12px}
 .result-text{font-size:1.3rem;color:#333;font-weight:700;line-height:1.5}
-.note{color:rgba(255,255,255,.8);font-size:.9rem;margin-top:35px;line-height:1.6}
+.note{color:rgba(255,255,255,.8);font-size:.9rem;line-height:1.6;opacity:0;-webkit-transition:opacity .5s ease;transition:opacity .5s ease;margin-bottom:-60px;margin-top:40px}
+.note.show{opacity:1}
 </style>
 </head>
 <body>
@@ -35,7 +36,7 @@ body{min-height:100vh;display:flex;flex-direction:column;align-items:center;just
     <div class="result-emoji" id="emoji"></div>
     <div class="result-text" id="text"></div>
   </div>
-  <div class="note">這是一個特別的道歉禮物 💝<br>希望你可以原諒我～</div>
+  <div class="note" id="note">這是一個特別的道歉禮物 💝<br>希望你可以原諒我～</div>
 </div>
 <script>
 (function(){
@@ -47,6 +48,7 @@ body{min-height:100vh;display:flex;flex-direction:column;align-items:center;just
   var resultEl = document.getElementById('result');
   var emojiEl = document.getElementById('emoji');
   var textEl = document.getElementById('text');
+  var noteEl = document.getElementById('note');
   var wrapEl = document.getElementById('diceWrap');
 
   var data = [
@@ -55,29 +57,21 @@ body{min-height:100vh;display:flex;flex-direction:column;align-items:center;just
   ];
 
   var spinFaces = ['🎲','⭐','❓','🃏','✨','🌈','🎲','❓'];
-  var duration = 700; // ms
-  var startAngle = 0;
+  var duration = 700;
 
   function animateSpin(callback) {
     var start = null;
-    var totalRotation = 720; // 2 full rotations
-
+    var totalRotation = 720;
     function frame(ts) {
       if (!start) start = ts;
       var elapsed = ts - start;
       var progress = Math.min(elapsed / duration, 1);
-
-      // Easing: ease-out cubic
       var eased = 1 - Math.pow(1 - progress, 3);
       var angle = eased * totalRotation;
       var scale = 1 + 0.15 * Math.sin(progress * Math.PI * 2);
-
       diceEl.style.transform = 'rotate(' + angle + 'deg) scale(' + scale + ')';
-
-      // Cycle face emoji
       var fi = Math.floor(progress * spinFaces.length * 3) % spinFaces.length;
       faceEl.textContent = spinFaces[fi];
-
       if (progress < 1) {
         requestAnimationFrame(frame);
       } else {
@@ -85,54 +79,39 @@ body{min-height:100vh;display:flex;flex-direction:column;align-items:center;just
         if (callback) callback();
       }
     }
-
     requestAnimationFrame(frame);
   }
 
   function doRoll() {
     if (busy) return;
-
-    // After 2 rolls, reset
     if (step >= 2) {
       step = 0;
       resultEl.classList.remove('vis');
+      noteEl.classList.remove('show');
       hintEl.textContent = '點擊骰子開始！';
       faceEl.textContent = '🎲';
       return;
     }
-
     busy = true;
     hintEl.textContent = '骰子轉動中…';
     resultEl.classList.remove('vis');
-
+    noteEl.classList.remove('show');
     animateSpin(function() {
       var d = data[step];
       faceEl.textContent = d.face;
       emojiEl.textContent = d.emoji;
       textEl.textContent = d.text;
       resultEl.classList.add('vis');
-
-      if (step === 0) {
-        hintEl.textContent = '再按一次！';
-      } else {
-        hintEl.textContent = '🎉 恭喜！再按可重來';
+      if (step === 1) {
+        noteEl.classList.add('show');
       }
-
+      hintEl.textContent = step === 0 ? '再按一次！' : '🎉 恭喜！再按可重來';
       step++;
       busy = false;
     });
   }
-
-  // Use both touchend and click for max mobile compatibility
-  wrapEl.addEventListener('click', function(e) {
-    e.preventDefault();
-    doRoll();
-  });
-
-  wrapEl.addEventListener('touchend', function(e) {
-    e.preventDefault();
-    doRoll();
-  }, { passive: false });
+  wrapEl.addEventListener('click', function(e){ e.preventDefault(); doRoll(); });
+  wrapEl.addEventListener('touchend', function(e){ e.preventDefault(); doRoll(); }, {passive:false});
 })();
 </script>
 </body>
