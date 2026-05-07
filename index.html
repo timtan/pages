@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>🎲 神秘骰子</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:20px;-webkit-tap-highlight-color:transparent}
+.box{text-align:center;max-width:360px;width:100%}
+.title{color:#fff;font-size:1.5rem;margin-bottom:30px;text-shadow:0 2px 4px rgba(0,0,0,.2)}
+.dice-wrap{width:140px;height:140px;margin:0 auto 25px;cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.dice{width:100%;height:100%;background:linear-gradient(145deg,#fff,#f0f0f0);border-radius:22px;box-shadow:0 10px 30px rgba(0,0,0,.3),inset 0 -4px 8px rgba(0,0,0,.08),inset 0 4px 8px rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;position:relative}
+.dice-face{font-size:56px;line-height:1;z-index:1}
+.shine{position:absolute;top:12px;left:12px;width:35px;height:35px;background:linear-gradient(135deg,rgba(255,255,255,.7),transparent);border-radius:8px}
+.hint{color:rgba(255,255,255,.9);font-size:1rem;margin-top:15px}
+.result{background:#fff;border-radius:20px;padding:28px 20px;margin-top:25px;box-shadow:0 10px 40px rgba(0,0,0,.2);display:none}
+.result.vis{display:block}
+.result-emoji{font-size:3rem;margin-bottom:12px}
+.result-text{font-size:1.3rem;color:#333;font-weight:700;line-height:1.5}
+.note{color:rgba(255,255,255,.8);font-size:.9rem;margin-top:35px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="title">🎲 試試你的運氣！</div>
+  <div class="dice-wrap" id="diceWrap" ontouchstart="">
+    <div class="dice" id="dice">
+      <div class="shine"></div>
+      <div class="dice-face" id="face">🎲</div>
+    </div>
+  </div>
+  <div class="hint" id="hint">點擊骰子開始！</div>
+  <div class="result" id="result">
+    <div class="result-emoji" id="emoji"></div>
+    <div class="result-text" id="text"></div>
+  </div>
+  <div class="note">這是一個特別的道歉禮物 💝<br>希望你可以原諒我～</div>
+</div>
+<script>
+(function(){
+  var step = 0;
+  var busy = false;
+  var diceEl = document.getElementById('dice');
+  var faceEl = document.getElementById('face');
+  var hintEl = document.getElementById('hint');
+  var resultEl = document.getElementById('result');
+  var emojiEl = document.getElementById('emoji');
+  var textEl = document.getElementById('text');
+  var wrapEl = document.getElementById('diceWrap');
+
+  var data = [
+    { text: '再骰一次', emoji: '🎲', face: '🎲' },
+    { text: '喜獲一條防摔褲', emoji: '👖✨', face: '👖' }
+  ];
+
+  var spinFaces = ['🎲','⭐','❓','🃏','✨','🌈','🎲','❓'];
+  var duration = 700; // ms
+  var startAngle = 0;
+
+  function animateSpin(callback) {
+    var start = null;
+    var totalRotation = 720; // 2 full rotations
+
+    function frame(ts) {
+      if (!start) start = ts;
+      var elapsed = ts - start;
+      var progress = Math.min(elapsed / duration, 1);
+
+      // Easing: ease-out cubic
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var angle = eased * totalRotation;
+      var scale = 1 + 0.15 * Math.sin(progress * Math.PI * 2);
+
+      diceEl.style.transform = 'rotate(' + angle + 'deg) scale(' + scale + ')';
+
+      // Cycle face emoji
+      var fi = Math.floor(progress * spinFaces.length * 3) % spinFaces.length;
+      faceEl.textContent = spinFaces[fi];
+
+      if (progress < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        diceEl.style.transform = 'rotate(0deg) scale(1)';
+        if (callback) callback();
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  function doRoll() {
+    if (busy) return;
+
+    // After 2 rolls, reset
+    if (step >= 2) {
+      step = 0;
+      resultEl.classList.remove('vis');
+      hintEl.textContent = '點擊骰子開始！';
+      faceEl.textContent = '🎲';
+      return;
+    }
+
+    busy = true;
+    hintEl.textContent = '骰子轉動中…';
+    resultEl.classList.remove('vis');
+
+    animateSpin(function() {
+      var d = data[step];
+      faceEl.textContent = d.face;
+      emojiEl.textContent = d.emoji;
+      textEl.textContent = d.text;
+      resultEl.classList.add('vis');
+
+      if (step === 0) {
+        hintEl.textContent = '再按一次！';
+      } else {
+        hintEl.textContent = '🎉 恭喜！再按可重來';
+      }
+
+      step++;
+      busy = false;
+    });
+  }
+
+  // Use both touchend and click for max mobile compatibility
+  wrapEl.addEventListener('click', function(e) {
+    e.preventDefault();
+    doRoll();
+  });
+
+  wrapEl.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    doRoll();
+  }, { passive: false });
+})();
+</script>
+</body>
+</html>
